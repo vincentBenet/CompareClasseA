@@ -47,7 +47,9 @@ def compare_gis_files(
     if computed.shape[0] == 0 or reference.shape[0] == 0:
         return None
     dists_xy, dists_z = compare_curves(reference, computed)
-    return compare_pipe_to_pipe(dists_xy, dists_z), dists_xy, dists_z
+    scores = compare_pipe_to_pipe(dists_xy, dists_z)
+    print(scores)
+    return scores, dists_xy, dists_z, reference, computed
 
 
 def compare_pipe_to_pipe(dists_xy, dists_z):
@@ -96,9 +98,10 @@ def curvilinear_abs(points):
 
 
 if __name__ == "__main__":
-    scores, diff_xy, diff_z = compare_gis_files(
-        Path(r"D:\GSUNL\Input\magmotor\ref_z3.gpkg"),
-        Path(r"D:\GSUNL\Input\magmotor\magmotor_result_z3.gpkg"),
+    import draw
+    draw.main(
+        *compare_gis_files(
+            Path(r"D:/GSUNL/Input/magmotor/magmotor_result_z3.gpkg"),
+            Path(r"D:/GSUNL/Input/magmotor/ref_z3.gpkg"),
+            )
     )
-
-    print(scores)
