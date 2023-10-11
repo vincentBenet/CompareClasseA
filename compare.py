@@ -87,23 +87,18 @@ def compare_gis_files(
 def compare_pipe_to_pipe(dists_xy, dists_z):
     if not len(dists_xy):
         print(f"Exit because not len(dists_XY)")
-    xy60 = numpy.percentile(dists_xy, 60)
-    xy90 = numpy.percentile(dists_xy, 90)
-    xy100 = numpy.percentile(dists_xy, 100)
-    z90 = numpy.percentile(dists_z, 90)
-    z100 = numpy.percentile(dists_z, 100)
     scores = {
-        "XY 60%": xy60,  # Percentile 60% XY
-        "XY 90%": xy90,  # Percentile 90% XY
-        "XY 100%": xy100,  # Percentile 100% XY
-        "Z 90%": z90,  # Percentile 90% Z
-        "Z 100%": z100,  # Percentile 100% Z
-        "XY 60% 20cm": (0.2 - xy60) / 0.2,  # Critere à 60% XY 20cm, positif si classe A, [-inf, 1]
-        "XY 90% 40cm": (0.4 - xy90) / 0.4,  # Critere à 90% XY 40cm, positif si classe A, [-inf, 1]
-        "XY 100% 150cm": (1.5 - xy100) / 1.5,  # Critere à 100% XY 150cm, positif si classe A, [-inf, 1]
-        "Z 90% 40cm": (0.4 - z90) / 0.4,  # Critere à 90% Z 40cm, positif si classe A, [-inf, 1]
-        "Z 100% 70cm": (0.7 - z100) / 0.7  # Critere à 100% Z 70cm, positif si classe A, [-inf, 1]
+        "XY 60%": numpy.percentile(dists_xy, 60),
+        "XY 90%": numpy.percentile(dists_xy, 90),
+        "XY 100%": numpy.percentile(dists_xy, 100),
+        "Z 90%": numpy.percentile(dists_z, 90),
+        "Z 100%": numpy.percentile(dists_z, 100),
     }
+    scores["XY 60% 20cm"] = 1 - scores['XY 60%'] / 0.2
+    scores["XY 90% 40cm"] = 1 - scores['XY 90%'] / 0.4
+    scores["XY 100% 150cm"] = 1 - scores['XY 100%'] / 1.5
+    scores["Z 90% 40cm"] = 1 - scores['Z 90%'] / 0.4
+    scores["Z 100% 70cm"] = 1 - scores['Z 100%'] / 0.7
     scores['score_xy'] = scores['XY 60% 20cm'] + scores['XY 90% 40cm'] + scores['XY 100% 150cm']
     scores['score_z'] = scores['Z 90% 40cm'] + scores['Z 100% 70cm']
     scores['score'] = scores['score_xy'] + scores['score_z']
