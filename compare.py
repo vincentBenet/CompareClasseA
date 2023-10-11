@@ -1,28 +1,32 @@
 import math
 import numpy
 import geopandas
+import pyproj
 from pathlib import Path
 from scipy import spatial
 
 
-def coordinates_from_gis(gis_file_paths):
+def coordinates_from_gis(gis_file_paths, unit="metre", espg_global="EPSG:3857"):
     res = []
-    epsg = ""
+    for path in gis_file_paths:
+        data = geopandas.read_file(path)
+        if data.crs.axis_info[0].unit_name == unit:
+            epsg = str(data.geometry.crs)
+            break
+    else:
+        epsg = espg_global
+
+    print(f"Projection EPSG: {epsg = }")
+
     for i, path in enumerate(gis_file_paths):
         data = geopandas.read_file(path)
         epsg_from = str(data.geometry.crs)
-        if i == 0:
-            epsg = epsg_from
-        elif epsg_from != epsg:
-            raise Exception(f"Files must be in same EPSG")
-        if epsg_from == "EPSG:4326":
-            raise Exception(f"Guess GPKG must be in projected EPSG")
-        print(f"{epsg_from} - {path}")
+        print(f"Loading {epsg_from} - {path}")
         x = data.geometry.x
         y = data.geometry.y
         pipe = numpy.array([x, y, data.geometry.z]).T
-        res_pipe = []
-        for point in pipe:
+        mask = []
+        for i, point in enumerate(pipe):
             if not (
                 math.isinf(point[0]) or
                 math.isinf(point[1]) or
@@ -31,11 +35,31 @@ def coordinates_from_gis(gis_file_paths):
                 numpy.isnan(point[1]) or
                 numpy.isnan(point[2])
             ):
-                res_pipe.append(point)
-        if not len(res_pipe):
+                mask.append(i)
+        if epsg_from != epsg:
+            print(f"\tReproject coordinates from {epsg_from} to {epsg}")
+            lon, lat = pipe[mask].T[:2]
+            print(
+                "\tCoordinates median (lon, lat) in degree: ",
+                round(numpy.median(lon), 1),
+                round(numpy.median(lat), 1))
+            x, y = pyproj.transform(
+                pyproj.Proj(epsg_from),
+                pyproj.Proj(epsg),
+                lat, lon)
+            print(
+                "\tCoordinates median (x, y) in meter: ",
+                round(numpy.median(x), 1),
+                round(numpy.median(y), 1))
+            pipe = numpy.array([x, y, pipe[mask].T[2]]).T
+        abc = curvilinear_abs(pipe)
+        print("\tCurvilign abcisse distance: ", round(abc[-1], 1), "meter")
+        if not len(pipe):
             raise Exception(f"Empty 3D geometry for file {path}")
-        res.append(numpy.array(res_pipe))
-        print(f"\tLoading {path = }: {len(res_pipe)} points")
+        x, y, z = pipe.T
+        res.append(numpy.array([x, y, z, abc]).T)
+        print(f"\tLoaded {len(pipe)} points")
+        print("_"*50)
     return res
 
 
@@ -46,10 +70,16 @@ def compare_gis_files(
     computed, reference = coordinates_from_gis([computed_path, reference_path])
     if computed.shape[0] == 0 or reference.shape[0] == 0:
         return None
-    dists_xy, dists_z = compare_curves(reference, computed)
+    dists_xy, dists_z, res = compare_curves(reference.T[:3].T, computed.T[:3].T)
     scores = compare_pipe_to_pipe(dists_xy, dists_z)
-    print(scores)
-    return scores, dists_xy, dists_z, reference, computed
+    print("Results: ")
+    print(f"\tXY 60%  = {(scores['XY 60%'] * 100):.2f} /  20 cm ({(scores['XY 60% 20cm']*100):.2f} %)")
+    print(f"\tXY 90%  = {(scores['XY 90%'] * 100):.2f} /  40 cm ({(scores['XY 90% 40cm']*100):.2f} %)")
+    print(f"\tXY 100% = {(scores['XY 100%'] * 100):.2f} / 150 cm ({(scores['XY 100% 150cm']*100):.2f} %)")
+    print(f"\tZ 90%   = {(scores['Z 90%'] * 100):.2f} /  40 cm ({(scores['Z 90% 40cm']*100):.2f} %)")
+    print(f"\tZ 100%  = {(scores['Z 100%'] * 100):.2f} /  70 cm ({(scores['Z 100% 70cm']*100):.2f} %)")
+
+    return scores, dists_xy, dists_z, reference, res,
 
 
 def compare_pipe_to_pipe(dists_xy, dists_z):
@@ -74,14 +104,20 @@ def compare_pipe_to_pipe(dists_xy, dists_z):
     }
 
 
-def compare_curves(reference, computed):
-    interp_reference = interp1d_curve_step(reference, 0.01)
+def compare_curves(reference, computed, step=0.01):
+    interp_reference = interp1d_curve_step(reference, step)
+    abc_interp_reference = curvilinear_abs(interp_reference)
     tree = spatial.KDTree(interp_reference[..., :2])
     min_dist, index_min_dist = tree.query(computed[..., :2], k=1)
     axis_min_dist = interp_reference[index_min_dist, 2]
     dist_axis = numpy.abs(computed[..., 2] - axis_min_dist)
     mask = ~numpy.logical_or(index_min_dist == 0, index_min_dist == len(interp_reference) - 1)
-    return min_dist[mask], dist_axis[mask]
+    diff_xy = min_dist[mask]
+    diff_z = dist_axis[mask]
+    abc = abc_interp_reference[index_min_dist][mask]
+    x, y, z = computed[mask].T
+    res = numpy.array([x, y, z, abc]).T
+    return diff_xy, diff_z, res
 
 
 def interp1d_curve_step(points, step):
@@ -94,14 +130,23 @@ def interp1d_curve_step(points, step):
 
 
 def curvilinear_abs(points):
-    return numpy.insert(numpy.cumsum(numpy.nansum((points[:-1] - points[1:]) ** 2, axis=1) ** 0.5), 0, 0)
+    return numpy.insert(
+        numpy.cumsum(
+            numpy.nansum(
+                (
+                    points[:-1] - points[1:]
+                ) ** 2, axis=1
+            ) ** 0.5),
+        0, 0
+    )
 
 
 if __name__ == "__main__":
     import draw
+    import os
     draw.main(
         *compare_gis_files(
-            Path(r"D:/GSUNL/Input/magmotor/magmotor_result_z3.gpkg"),
-            Path(r"D:/GSUNL/Input/magmotor/ref_z3.gpkg"),
+            reference_path=Path(os.path.join(os.path.dirname(__file__), "data_test", "magmotor_result_z3.gpkg")),
+            computed_path=Path(os.path.join(os.path.dirname(__file__), "data_test", "z3_ref.gpkg")),
             )
     )

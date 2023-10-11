@@ -40,9 +40,9 @@ class CompareClasseA:
         self.layers = {
             layer.name(): layer.source().split("|")[0]
             for layer in layers
-            if (
-                layer.geometryType() == QgsMapLayer.VectorLayer
-            )
+            # if (
+            #     layer.geometryType() == QgsMapLayer.VectorLayer
+            # )
         }
         self.dlg.comboBox_reference.clear()
         self.dlg.comboBox_result.clear()
