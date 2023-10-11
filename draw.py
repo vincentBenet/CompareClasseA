@@ -4,12 +4,14 @@ from matplotlib import colors
 import matplotlib.patheffects as pe
 
 
-def main(scores, diff_xy, diff_z, reference, res):
+def main(scores, diff_xy, diff_z, reference, res, ref_name, res_name):
 
-    nb = min(len(diff_xy), 100)
+    nb = min(len(diff_xy), 50)
 
     ref_x, ref_y, ref_z, ref_abc = reference.T
     res_x, res_y, res_z, res_abc = res.T
+
+    indexes = numpy.around(numpy.linspace(0, len(res), 10))
 
     mid_x = numpy.median(ref_x)
     mid_y = numpy.median(ref_y)
@@ -56,7 +58,10 @@ def main(scores, diff_xy, diff_z, reference, res):
         cmap=plt.cm.turbo,
         edgecolor="white"
     )
+
     for i, point in enumerate(numpy.array([res_x, res_y]).T):
+        if i not in indexes:
+            continue
         distance = diff_xy[i]
         x, y = point
         txt = f"{i} : {(distance * 100):.2f} cm"
@@ -68,22 +73,22 @@ def main(scores, diff_xy, diff_z, reference, res):
             path_effects=[pe.withStroke(linewidth=4, foreground="white")]
         )
 
-    axs[1][0].axvspan(0, 1.5, color="red", alpha=0.25)
-    axs[1][0].axvline(scores["XY 100%"], color="red")
-    axs[1][0].axvspan(0, 0.4, color="blue", alpha=0.25)
-    axs[1][0].axvline(scores["XY 90%"], color="blue")
-    axs[1][0].axvspan(0, 0.2, color="green", alpha=0.25)
-    axs[1][0].axvline(scores["XY 60%"], color="green")
+    axs[1][0].axvspan(0, 1.5, color="red", alpha=1)
+    axs[1][0].axvline(scores["XY 100%"], color="red", linewidth=1, path_effects=[pe.withStroke(linewidth=3, foreground="white")])
+    axs[1][0].axvspan(0, 0.4, color="blue", alpha=1)
+    axs[1][0].axvline(scores["XY 90%"], color="blue", linewidth=1, path_effects=[pe.withStroke(linewidth=3, foreground="white")])
+    axs[1][0].axvspan(0, 0.2, color="green", alpha=1)
+    axs[1][0].axvline(scores["XY 60%"], color="green", linewidth=1, path_effects=[pe.withStroke(linewidth=3, foreground="white")])
 
-    n_xy, bins_xy, patches_xy = axs[1][0].hist(diff_xy, bins=nb)
+    n_xy, bins_xy, patches_xy = axs[1][0].hist(diff_xy, bins=nb, edgecolor='black')
     fracs = numpy.array([v for v in abs(bins_xy[:-1])])
     for thisfrac, thispatch in zip(fracs, patches_xy):
         thispatch.set_facecolor(plt.cm.turbo(colors.Normalize(fracs.min(), fracs.max())(thisfrac)))
 
-    axs[1][1].axvspan(0, 0.7, color="red", alpha=0.25)
-    axs[1][1].axvline(scores["Z 100%"], color="red")
-    axs[1][1].axvspan(0, 0.4, color="blue", alpha=0.25)
-    axs[1][1].axvline(scores["Z 90%"], color="blue")
+    axs[1][1].axvspan(0, 0.7, color="red", alpha=1)
+    axs[1][1].axvline(scores["Z 100%"], color="red", linewidth=1, path_effects=[pe.withStroke(linewidth=3, foreground="white")])
+    axs[1][1].axvspan(0, 0.4, color="blue", alpha=1)
+    axs[1][1].axvline(scores["Z 90%"], color="blue", linewidth=1, path_effects=[pe.withStroke(linewidth=3, foreground="white")])
 
     axs[0][1].plot(ref_abc, ref_z, color="black")
     axs[0][1].fill_between(
@@ -107,7 +112,7 @@ def main(scores, diff_xy, diff_z, reference, res):
         label=f"Z 90%   = {(scores['Z 90%'] * 100):.2f} /  40 cm ({(scores['Z 90% 40cm']*100):.2f} %)",
     )
 
-    n_z, bins_z, patches_z = axs[1][1].hist(diff_z, bins=nb)
+    n_z, bins_z, patches_z = axs[1][1].hist(diff_z, bins=nb, edgecolor='black')
     fracs = numpy.array([v for v in abs(bins_z[:-1])])
     for thisfrac, thispatch in zip(fracs, patches_z):
         thispatch.set_facecolor(plt.cm.turbo(colors.Normalize(fracs.min(), fracs.max())(thisfrac)))
@@ -120,6 +125,8 @@ def main(scores, diff_xy, diff_z, reference, res):
         edgecolor="white"
     )
     for i, point in enumerate(numpy.array([res_abc, res_z]).T):
+        if i not in indexes:
+            continue
         distance = diff_z[i]
         a, z = point
         txt = f"{i} : {(distance * 100):.2f} cm"
@@ -132,6 +139,27 @@ def main(scores, diff_xy, diff_z, reference, res):
             textcoords='offset pixels',
             path_effects=[pe.withStroke(linewidth=4, foreground="white")]
         )
+
+    axs[1][0].set_xlim(left=0, right=max(diff_xy))
+    axs[1][1].set_xlim(left=0, right=max(diff_z))
+    axs[0][0].set_title('XY View')
+    axs[0][0].set_xlabel('Coordinates X (meter)')
+    axs[0][0].set_ylabel('Coordinates Y (meter)')
+    axs[1][0].set_title(f'XY Distances : Score = {scores["percent_xy"]:.2f} %', color=["red", "green"][scores['ok_xy']])
+    axs[1][0].set_xlabel('Distance XY (m)')
+    axs[1][0].set_ylabel('Population')
+    axs[0][1].set_title('Z View')
+    axs[1][0].set_xlabel('Curvilign Abcisse (m)')
+    axs[1][0].set_ylabel('Elevation (m)')
+    axs[1][1].set_title(f'Z Distances : Score = {scores["percent_z"]:.2f} %', color=["red", "green"][scores['ok_z']])
+    axs[1][0].set_xlabel('Distance XY (m)')
+    axs[1][0].set_ylabel('Population')
+
+    txt = f"Compare layer <{res_name}> to reference <{ref_name}>\n"
+    if not scores['ok']:
+        txt += f"OUT OF CLASS A\n"
+    txt += f"Score = {scores['percent']:.2f} %"
+    fig.suptitle(txt, fontsize=16, color=["red", "green"][scores['ok']])
 
     fig.legend()
     plt.show()

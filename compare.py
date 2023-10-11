@@ -67,7 +67,7 @@ def compare_gis_files(
     reference_path: Path,
     computed_path: Path,
 ):
-    computed, reference = coordinates_from_gis([computed_path, reference_path])
+    reference, computed = coordinates_from_gis([computed_path, reference_path])
     if computed.shape[0] == 0 or reference.shape[0] == 0:
         return None
     dists_xy, dists_z, res = compare_curves(reference.T[:3].T, computed.T[:3].T)
@@ -78,8 +78,10 @@ def compare_gis_files(
     print(f"\tXY 100% = {(scores['XY 100%'] * 100):.2f} / 150 cm ({(scores['XY 100% 150cm']*100):.2f} %)")
     print(f"\tZ 90%   = {(scores['Z 90%'] * 100):.2f} /  40 cm ({(scores['Z 90% 40cm']*100):.2f} %)")
     print(f"\tZ 100%  = {(scores['Z 100%'] * 100):.2f} /  70 cm ({(scores['Z 100% 70cm']*100):.2f} %)")
+    ref_name = ".".join(os.path.basename(reference_path).split(".")[:-1])
+    res_name = ".".join(os.path.basename(computed_path).split(".")[:-1])
 
-    return scores, dists_xy, dists_z, reference, res,
+    return scores, dists_xy, dists_z, reference, res, ref_name, res_name
 
 
 def compare_pipe_to_pipe(dists_xy, dists_z):
@@ -90,7 +92,7 @@ def compare_pipe_to_pipe(dists_xy, dists_z):
     xy100 = numpy.percentile(dists_xy, 100)
     z90 = numpy.percentile(dists_z, 90)
     z100 = numpy.percentile(dists_z, 100)
-    return {
+    scores = {
         "XY 60%": xy60,  # Percentile 60% XY
         "XY 90%": xy90,  # Percentile 90% XY
         "XY 100%": xy100,  # Percentile 100% XY
@@ -102,6 +104,23 @@ def compare_pipe_to_pipe(dists_xy, dists_z):
         "Z 90% 40cm": (0.4 - z90) / 0.4,  # Critere à 90% Z 40cm, positif si classe A, [-inf, 1]
         "Z 100% 70cm": (0.7 - z100) / 0.7  # Critere à 100% Z 70cm, positif si classe A, [-inf, 1]
     }
+    scores['score_xy'] = scores['XY 60% 20cm'] + scores['XY 90% 40cm'] + scores['XY 100% 150cm']
+    scores['score_z'] = scores['Z 90% 40cm'] + scores['Z 100% 70cm']
+    scores['score'] = scores['score_xy'] + scores['score_z']
+    scores["percent"] = scores['score'] / 5 * 100
+    scores["percent_xy"] = scores['score_xy'] / 3 * 100
+    scores["percent_z"] = scores['score_z'] / 2 * 100
+    scores['ok_xy'] = not (
+            scores['XY 60% 20cm'] < 0 or
+            scores['XY 90% 40cm'] < 0 or
+            scores['XY 100% 150cm'] < 0
+    )
+    scores["ok_z"] = not (
+            scores['Z 90% 40cm'] < 0 or
+            scores['Z 100% 70cm'] < 0
+    )
+    scores["ok"] = scores['ok_xy'] * scores["ok_z"]
+    return scores
 
 
 def compare_curves(reference, computed, step=0.01):
