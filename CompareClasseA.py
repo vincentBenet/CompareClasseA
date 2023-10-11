@@ -40,9 +40,9 @@ class CompareClasseA:
         self.layers = {
             layer.name(): layer.source().split("|")[0]
             for layer in layers
-            # if (
-            #     layer.geometryType() == QgsMapLayer.VectorLayer
-            # )
+            if (
+                layer.type() == QgsMapLayer.VectorLayer
+            )
         }
         self.dlg.comboBox_reference.clear()
         self.dlg.comboBox_result.clear()
@@ -105,11 +105,9 @@ class CompareClasseA:
         self.dlg.show()
         result = self.dlg.exec_()
         if result:
-            print(self.layers)
-            path_ref = self.dlg.comboBox_reference.currentText()
-            path_result = self.dlg.comboBox_result.currentText()
-            scores, diff_xy, diff_z, reference, computed = compare.compare_gis_files(
-                Path(self.layers[path_ref]),
-                Path(self.layers[path_result])
-            )
-            draw.main(scores, diff_xy, diff_z, reference, computed)
+            draw.main(*compare.compare_gis_files(
+                Path(self.layers[self.dlg.comboBox_reference.currentText()]),
+                Path(self.layers[self.dlg.comboBox_result.currentText()]),
+                self.dlg.comboBox_reference_unit.currentText().split(" (")[0].lower().replace(" ", "_"),
+                self.dlg.comboBox_result_unit.currentText().split(" (")[0].lower().replace(" ", "_"),
+            ))

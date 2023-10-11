@@ -4,11 +4,23 @@ import geopandas
 import pyproj
 from pathlib import Path
 from scipy import spatial
+import os
 
 
 def coordinates_from_gis(gis_file_paths, unit="metre", espg_global="EPSG:3857"):
+
+    elevation_conversions = {  # https://en.wikipedia.org/wiki/Foot_(unit)
+        "meter": 1,
+        "international_foot": 0.3048,
+        "us_survey_foot": 1200/3937,
+        "indian_survey_foot": 0.3047996,
+        "metric_foot": 1/3,
+        "hesse_foot": 1/4,
+        "baden foot": 0.3,
+    }
+
     res = []
-    for path in gis_file_paths:
+    for path, unit_layer in gis_file_paths:
         data = geopandas.read_file(path)
         if data.crs.axis_info[0].unit_name == unit:
             epsg = str(data.geometry.crs)
@@ -18,13 +30,15 @@ def coordinates_from_gis(gis_file_paths, unit="metre", espg_global="EPSG:3857"):
 
     print(f"Projection EPSG: {epsg = }")
 
-    for i, path in enumerate(gis_file_paths):
+    for i, layer in enumerate(gis_file_paths):
+        path, unit_layer = layer
         data = geopandas.read_file(path)
         epsg_from = str(data.geometry.crs)
         print(f"Loading {epsg_from} - {path}")
         x = data.geometry.x
         y = data.geometry.y
-        pipe = numpy.array([x, y, data.geometry.z]).T
+        z = data.geometry.z * elevation_conversions[unit_layer]
+        pipe = numpy.array([x, y, z]).T
         mask = []
         for i, point in enumerate(pipe):
             if not (
@@ -64,10 +78,16 @@ def coordinates_from_gis(gis_file_paths, unit="metre", espg_global="EPSG:3857"):
 
 
 def compare_gis_files(
-    reference_path: Path,
-    computed_path: Path,
+    ref_path: Path,
+    res_path: Path,
+    ref_unit,
+    res_unit,
 ):
-    reference, computed = coordinates_from_gis([computed_path, reference_path])
+    reference, computed = coordinates_from_gis([
+        [ref_path, ref_unit],
+        [res_path, res_unit],
+    ])
+
     if computed.shape[0] == 0 or reference.shape[0] == 0:
         return None
     dists_xy, dists_z, res = compare_curves(reference.T[:3].T, computed.T[:3].T)
@@ -78,8 +98,8 @@ def compare_gis_files(
     print(f"\tXY 100% = {(scores['XY 100%'] * 100):.2f} / 150 cm ({(scores['XY 100% 150cm']*100):.2f} %)")
     print(f"\tZ 90%   = {(scores['Z 90%'] * 100):.2f} /  40 cm ({(scores['Z 90% 40cm']*100):.2f} %)")
     print(f"\tZ 100%  = {(scores['Z 100%'] * 100):.2f} /  70 cm ({(scores['Z 100% 70cm']*100):.2f} %)")
-    ref_name = ".".join(os.path.basename(reference_path).split(".")[:-1])
-    res_name = ".".join(os.path.basename(computed_path).split(".")[:-1])
+    ref_name = ".".join(os.path.basename(ref_path).split(".")[:-1])
+    res_name = ".".join(os.path.basename(res_path).split(".")[:-1])
 
     return scores, dists_xy, dists_z, reference, res, ref_name, res_name
 
@@ -157,10 +177,11 @@ def curvilinear_abs(points):
 
 if __name__ == "__main__":
     import draw
-    import os
     draw.main(
         *compare_gis_files(
-            reference_path=Path(os.path.join(os.path.dirname(__file__), "data_test", "magmotor_result_z3.gpkg")),
-            computed_path=Path(os.path.join(os.path.dirname(__file__), "data_test", "z3_ref.gpkg")),
-            )
+            Path(os.path.join(os.path.dirname(__file__), "data_test", "magmotor_result_z3.gpkg")),
+            Path(os.path.join(os.path.dirname(__file__), "data_test", "z3_ref.gpkg")),
+            "meter",
+            "meter",
+        )
     )

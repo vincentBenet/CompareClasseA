@@ -30,6 +30,9 @@ def main(scores, diff_xy, diff_z, reference, res, ref_name, res_name):
         # edgecolor="white",
         label=f"XY 100% = {(scores['XY 100%'] * 100):.2f} / 150 cm ({(scores['XY 100% 150cm']*100):.2f} %)",
     )
+
+    fig.legend().get_texts()[-1].set_color(["red", "green"][scores['XY 100% 150cm'] > 0])
+
     axs[0][0].fill_between(
         ref_x - mid_x,
         ref_y - mid_y - 0.4,
@@ -161,5 +164,5 @@ def main(scores, diff_xy, diff_z, reference, res, ref_name, res_name):
     txt += f"Score = {scores['percent']:.2f} %"
     fig.suptitle(txt, fontsize=16, color=["red", "green"][scores['ok']])
 
-    fig.legend()
+    fig.legend(loc='best')
     plt.show()
