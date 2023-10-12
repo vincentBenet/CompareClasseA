@@ -143,20 +143,23 @@ def main(scores, diff_xy, diff_z, reference, res, ref_name, res_name):
             path_effects=[pe.withStroke(linewidth=4, foreground="white")]
         )
 
-    axs[1][0].set_xlim(left=0, right=max(diff_xy))
-    axs[1][1].set_xlim(left=0, right=max(diff_z))
     axs[0][0].set_title('XY View')
     axs[0][0].set_xlabel('Coordinates X (meter)')
     axs[0][0].set_ylabel('Coordinates Y (meter)')
+
     axs[1][0].set_title(f'XY Distances : Score = {scores["percent_xy"]:.2f} %', color=["red", "green"][scores['ok_xy']])
     axs[1][0].set_xlabel('Distance XY (m)')
     axs[1][0].set_ylabel('Population')
+    axs[1][0].set_xlim(left=0, right=max(diff_xy))
+
     axs[0][1].set_title('Z View')
-    axs[1][0].set_xlabel('Curvilign Abcisse (m)')
-    axs[1][0].set_ylabel('Elevation (m)')
+    axs[0][1].set_xlabel('Curvilign Abcisse (m)')
+    axs[0][1].set_ylabel('Elevation (m)')
+
     axs[1][1].set_title(f'Z Distances : Score = {scores["percent_z"]:.2f} %', color=["red", "green"][scores['ok_z']])
-    axs[1][0].set_xlabel('Distance XY (m)')
-    axs[1][0].set_ylabel('Population')
+    axs[1][1].set_xlabel('Distance Z (m)')
+    axs[1][1].set_ylabel('Population')
+    axs[1][1].set_xlim(left=0, right=max(diff_z))
 
     txt = f"Compare layer <{res_name}> to reference <{ref_name}>\n"
     if not scores['ok']:
@@ -164,5 +167,5 @@ def main(scores, diff_xy, diff_z, reference, res, ref_name, res_name):
     txt += f"Score = {scores['percent']:.2f} %"
     fig.suptitle(txt, fontsize=16, color=["red", "green"][scores['ok']])
 
-    fig.legend(loc='best')
+    fig.legend()
     plt.show()

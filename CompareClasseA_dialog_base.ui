@@ -6,58 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>632</width>
-    <height>247</height>
+    <width>459</width>
+    <height>93</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>CompareClasseA</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="1" column="2">
-    <widget class="QLabel" name="label_4">
-     <property name="text">
-      <string>Z unit</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="2">
-    <widget class="QLabel" name="label_3">
-     <property name="text">
-      <string>Z unit</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QComboBox" name="comboBox_reference"/>
-   </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Reference</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="1">
-    <widget class="QDialogButtonBox" name="button_box">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="1">
-    <widget class="QComboBox" name="comboBox_result"/>
-   </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="label_2">
-     <property name="text">
-      <string>Result</string>
-     </property>
-    </widget>
-   </item>
    <item row="0" column="3">
     <widget class="QComboBox" name="comboBox_reference_unit">
      <item>
@@ -97,7 +53,14 @@
      </item>
     </widget>
    </item>
-   <item row="1" column="3">
+   <item row="3" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Result</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="3">
     <widget class="QComboBox" name="comboBox_result_unit">
      <item>
       <property name="text">
@@ -134,6 +97,62 @@
        <string>Baden foot (30 cm)</string>
       </property>
      </item>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QDialogButtonBox" name="button_box">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="2">
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>Z unit</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QComboBox" name="comboBox_result"/>
+   </item>
+   <item row="3" column="2">
+    <widget class="QLabel" name="label_4">
+     <property name="text">
+      <string>Z unit</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QComboBox" name="comboBox_reference"/>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Reference</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="4">
+    <widget class="QDoubleSpinBox" name="doubleSpinBox_max_distance">
+     <property name="prefix">
+      <string>Max distance : </string>
+     </property>
+     <property name="suffix">
+      <string> (m)</string>
+     </property>
+     <property name="minimum">
+      <double>0.000000000000000</double>
+     </property>
+     <property name="singleStep">
+      <double>1.000000000000000</double>
+     </property>
+     <property name="value">
+      <double>3.000000000000000</double>
+     </property>
     </widget>
    </item>
   </layout>

@@ -82,15 +82,16 @@ def compare_gis_files(
     res_path: Path,
     ref_unit,
     res_unit,
+    max_dist=0
 ):
-    reference, computed = coordinates_from_gis([
-        [ref_path, ref_unit],
-        [res_path, res_unit],
-    ])
+    reference, computed = coordinates_from_gis(
+        gis_file_paths=[
+            [ref_path, ref_unit],
+            [res_path, res_unit]])
 
     if computed.shape[0] == 0 or reference.shape[0] == 0:
         return None
-    dists_xy, dists_z, res = compare_curves(reference.T[:3].T, computed.T[:3].T)
+    dists_xy, dists_z, res = compare_curves(reference.T[:3].T, computed.T[:3].T, max_dist)
     scores = compare_pipe_to_pipe(dists_xy, dists_z)
     print("Results: ")
     print(f"\tXY 60%  = {(scores['XY 60%'] * 100):.2f} /  20 cm ({(scores['XY 60% 20cm']*100):.2f} %)")
@@ -138,7 +139,7 @@ def compare_pipe_to_pipe(dists_xy, dists_z):
     return scores
 
 
-def compare_curves(reference, computed, step=0.01):
+def compare_curves(reference, computed, max_dist, step=0.01):
     interp_reference = interp1d_curve_step(reference, step)
     abc_interp_reference = curvilinear_abs(interp_reference)
     tree = spatial.KDTree(interp_reference[..., :2])
@@ -151,6 +152,11 @@ def compare_curves(reference, computed, step=0.01):
     abc = abc_interp_reference[index_min_dist][mask]
     x, y, z = computed[mask].T
     res = numpy.array([x, y, z, abc]).T
+    if max_dist > 0:
+        mask = diff_xy < max_dist
+        res = res[mask]
+        diff_xy = diff_xy[mask]
+        diff_z = diff_z[mask]
     return diff_xy, diff_z, res
 
 
@@ -183,5 +189,6 @@ if __name__ == "__main__":
             Path(os.path.join(os.path.dirname(__file__), "data_test", "z3_ref.gpkg")),
             "meter",
             "meter",
+            0.25
         )
     )

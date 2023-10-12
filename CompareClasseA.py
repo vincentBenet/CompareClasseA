@@ -110,4 +110,5 @@ class CompareClasseA:
                 Path(self.layers[self.dlg.comboBox_result.currentText()]),
                 self.dlg.comboBox_reference_unit.currentText().split(" (")[0].lower().replace(" ", "_"),
                 self.dlg.comboBox_result_unit.currentText().split(" (")[0].lower().replace(" ", "_"),
+                self.dlg.doubleSpinBox_max_distance.value(),
             ))
