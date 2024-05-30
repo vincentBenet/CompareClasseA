@@ -189,6 +189,6 @@ if __name__ == "__main__":
             Path(os.path.join(os.path.dirname(__file__), "data_test", "z3_ref.gpkg")),
             "meter",
             "meter",
-            0.25
+            25
         )
     )
